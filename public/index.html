@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor de Red</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; }
-        table { width: 100%; border-collapse: collapse; }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         th, td { border: 1px solid black; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         .alert { color: red; font-weight: bold; }
+        canvas { max-width: 600px; margin: 20px auto; }
     </style>
 </head>
 <body>
@@ -29,8 +31,33 @@
     <h2>Alertas 🚨</h2>
     <ul id="alerts"></ul>
 
+    <h2>Gráfico de Consumo de Ancho de Banda 📊</h2>
+    <canvas id="bandwidthChart"></canvas>
+
     <script>
         const socket = io();
+        const ctx = document.getElementById("bandwidthChart").getContext("2d");
+
+        let bandwidthData = {
+            labels: [],
+            datasets: [{
+                label: "Ancho de Banda (kbps)",
+                borderColor: "blue",
+                backgroundColor: "rgba(0, 0, 255, 0.2)",
+                data: []
+            }]
+        };
+
+        let bandwidthChart = new Chart(ctx, {
+            type: "line",
+            data: bandwidthData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
 
         socket.on("update", data => {
             const table = document.getElementById("deviceTable");
@@ -39,6 +66,7 @@
             table.innerHTML = "";
             alertsList.innerHTML = "";
 
+            let totalBandwidth = 0;
             data.dispositivos.forEach(device => {
                 let row = `<tr>
                     <td>${device.ip}</td>
@@ -46,12 +74,24 @@
                     <td>${device.bandwidth}</td>
                 </tr>`;
                 table.innerHTML += row;
+
+                totalBandwidth += parseFloat(device.bandwidth);
             });
 
             data.alertas.forEach(alert => {
                 let item = `<li class="alert">⚠️ ${alert.ip} está usando ${alert.bandwidth} kbps</li>`;
                 alertsList.innerHTML += item;
             });
+
+            // Actualizar gráfico
+            const now = new Date().toLocaleTimeString();
+            if (bandwidthData.labels.length > 10) {
+                bandwidthData.labels.shift();
+                bandwidthData.datasets[0].data.shift();
+            }
+            bandwidthData.labels.push(now);
+            bandwidthData.datasets[0].data.push(totalBandwidth);
+            bandwidthChart.update();
         });
     </script>
 </body>
