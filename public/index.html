@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Red</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .alert { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Dispositivos en la Red</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>IP</th>
+                <th>MAC</th>
+                <th>Ancho de Banda</th>
+            </tr>
+        </thead>
+        <tbody id="deviceTable"></tbody>
+    </table>
+
+    <h2>Alertas 🚨</h2>
+    <ul id="alerts"></ul>
+
+    <script>
+        const socket = io();
+
+        socket.on("update", data => {
+            const table = document.getElementById("deviceTable");
+            const alertsList = document.getElementById("alerts");
+
+            table.innerHTML = "";
+            alertsList.innerHTML = "";
+
+            data.dispositivos.forEach(device => {
+                let row = `<tr>
+                    <td>${device.ip}</td>
+                    <td>${device.mac}</td>
+                    <td>${device.bandwidth}</td>
+                </tr>`;
+                table.innerHTML += row;
+            });
+
+            data.alertas.forEach(alert => {
+                let item = `<li class="alert">⚠️ ${alert.ip} está usando ${alert.bandwidth} kbps</li>`;
+                alertsList.innerHTML += item;
+            });
+        });
+    </script>
+</body>
+</html>
